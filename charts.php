@@ -1,25 +1,33 @@
 <?php
+
 $media = get_attached_media('');
 foreach($media as $attachment) {
   echo $attachment->guid;
+
 ?>
+
 <script type="text/javascript" src="/data/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="/data/jszip/dist/jszip.min.js"></script>
 <script type="text/javascript" src="/data/jszip-utils/dist/jszip-utils.min.js"></script>
-<!-- Load d3.js -->
 <script src="/data/d3/d3.v4.js"></script>
-<div id="zip_output"></div>
-<iframe id="iframe"></iframe>
+
+<div id="session_metadata"></div>
+<div id="instrument_charts"></div>
+
 <script>
     function showError(elt, err) {
-        elt.innerHTML = "<p class='alert alert-danger'>" + err + "</p>";
+        elt.innerHTML += "<p>" + err + "</p>";
     }
-    function showContent(elt, content) {
-        elt.innerHTML = "<p class='alert alert-success'>loaded !<br/>" +
-          "Content = " + content + "</p>";
+
+    function showMetadata(elt, content) {
+        elt.innerHTML +=
+	    "<p>" +
+	      JSON.stringify(content) +
+	    "</p>";
     }
+
     var htmltext = JSZipUtils.getBinaryContent("<?=$attachment->guid;?>", function (err, data) {
-        var elt = document.getElementById('zip_output');
+        var elt = document.getElementById('session_metadata');
         if (err) {
             showError(elt, err);
             return;
@@ -28,26 +36,26 @@ foreach($media as $attachment) {
             JSZip.loadAsync(data)
                 .then(function (zip) {
                     for(var name in zip.files) {
-                        if (name.substring(name.lastIndexOf('.') + 1) === "json") {
-                            return zip.file(name).async("string");
+                        if (name.substring(name.lastIndexOf('.') + 1) === "csv") {
+                          zip.file(name).async("string").then(
+			    function(data) {
+			      //session_data[name] = data;
+			      // TODO: d3 chart below
+			    });
+                        }
+			else if (name.substring(name.lastIndexOf('.') + 1) === "json") {
+                          zip.file(name).async("string").then(
+			    function(data) {
+			      showMetadata(elt, JSON.parse(data))
+			    });
                         }
                     }
-                    return zip.file("").async("string");
-                })
-                .then(function success(text) {
-                    $('#iframe').contents().find('html').html(text);
-                    showContent(elt, text);
-                }, function error(e) {
-                    showError(elt, e);
                 });
         } catch(e) {
             showError(elt, e);
         }
     });
 </script>
-
-<!-- Create a div where the graph will take place -->
-<div id="my_dataviz"></div>
 
 <script>
 
@@ -57,7 +65,7 @@ var margin = {top: 60, right: 30, bottom: 80, left: 60},
     height = 400 - margin.top - margin.bottom;
 
 // append the svg object to the body of the page
-var svg = d3.select("#my_dataviz")
+var svg = d3.select("#instrument_charts")
   .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
