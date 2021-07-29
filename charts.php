@@ -27,7 +27,7 @@ foreach($media as $attachment) {
 	    "</p>";
     }
 
-    function showChart(name, x_label, x_min, x_max, y_label, y_min, y_max, data) {
+    function showChart(chart, data) {
 // set the dimensions and margins of the graph
 var margin = {top: 60, right: 30, bottom: 80, left: 60},
     width = 560 - margin.left - margin.right,
@@ -48,7 +48,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
     // Add X axis
     var x = d3.scaleLinear()
       //.domain(d3.extent(csv_data, function(d) { return d.time; }))
-      .domain([x_min, x_max])
+      .domain([chart.x_min, chart.x_max])
       .range([ 0, width ]);
     xAxis = svg.append("g")
       .attr("transform", "translate(0," + height + ")")
@@ -57,7 +57,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
     // Add Y axis
     var y = d3.scaleLinear()
       //.domain(d3.extent(csv_data, function(d) { return d.sample; }))
-      .domain([y_min, y_max])
+      .domain([chart.y_min, chart.y_max])
       .range([ height, 0 ]);
     yAxis = svg.append("g")
       .call(d3.axisLeft(y));
@@ -68,7 +68,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
       .attr('text-anchor', 'middle')
       .style('font-family', 'Helvetica')
       .style('font-size', 20)
-      .text(name);
+      .text(chart.title);
 
     // X label
     svg.append('text')
@@ -77,7 +77,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
       .attr('text-anchor', 'middle')
       .style('font-family', 'Helvetica')
       .style('font-size', 12)
-      .text(x_label);
+      .text(chart.x_label);
 
     // Y label
     svg.append('text')
@@ -85,7 +85,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
       .attr('transform', 'translate(-40,' + height/2 + ')rotate(-90)')
       .style('font-family', 'Helvetica')
       .style('font-size', 12)
-      .text(y_label);
+      .text(chart.y_label);
 
     // Add a clipPath: everything out of this area won't be drawn.
     var clip = svg.append("defs").append("svg:clipPath")
@@ -187,15 +187,10 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
 
 		        // render charts
 			for(var chart_idx = 0; chart_idx < metadata.chart_data.length; chart_idx++) {
-			  var local_chart = JSON.parse(JSON.stringify(metadata.chart_data[chart_idx])); // deep copy
-			  showText(elt, JSON.stringify(local_chart))
-			  zip.file(local_chart.filename).async("string").then(
+			  var chart = JSON.parse(JSON.stringify(metadata.chart_data[chart_idx])); // deep copy
+			  zip.file(chart.filename).async("string").then(
 			        function(data) {
-			          showChart(
-				      local_chart.title,
-				      local_chart.x_label, local_chart.x_min, local_chart.x_max,
-				      local_chart.y_label, local_chart.y_min, local_chart.y_max,
-				      data);
+			          showChart(chart, data);
 			        })
                         }
 		      });
