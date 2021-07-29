@@ -29,7 +29,17 @@ metadata = {
     "email": "test@example.com",
     "gender": "Male",
     "birthdate": "1/1/1970",
-    "weight": 180.0}
+    "weight": 180.0,
+    "chart_data": {
+        OUTFILE_CSV: {
+            "chart_type": "line",
+            "x_label": "Time (s)",
+            "x_min": 0.0,
+            "x_max": SAMPLES/SAMPLE_TIME_INCR,
+            "y_label": "Amplitude",
+            "y_min": -1.5,
+            "y_max": 1.5}}}
+
 with open(OUTFILE_JSON, "w") as json_file:
     json.dump(metadata, json_file)
 
