@@ -42,19 +42,23 @@ def gen_chart(
         sample_time = start_time
         inc = (end_time - start_time)/num_samples
         while sample_time < end_time:
-            yt =  amplitude * math.sin(2*math.pi * freq * sample_time + phase) + y_offset
+            yt =  amplitude * math.sin(
+                2*math.pi * freq * sample_time + phase) + y_offset
             inst_writer.writerow([sample_time, yt])
             sample_time += inc
 
     return {
         "chart_type": "line",
+        "filename": filename,
         "title": "Test Data",
         "x_label": "Time (s)",
         "x_min": start_time,
         "x_max": end_time,
         "y_label": "Amplitude",
         "y_min": -amplitude,
-        "y_max": amplitude}
+        "y_max": amplitude,
+        "x_column": "time",
+        "y_column": "sample"}
 
 
 metadata = {
@@ -68,13 +72,13 @@ metadata = {
     "gender": "Male",
     "birthdate": "1/1/1970",
     "weight": 180.0,
-    "chart_data": {}}
+    "chart_data": []}
 
 
 with zipfile.ZipFile(OUTFILE_ZIP, mode="w") as session:
     for csv_filename, kwargs in OUTFILE_CSVS.items():
         meta = gen_chart(csv_filename, **kwargs)
-        metadata["chart_data"][csv_filename] = meta
+        metadata["chart_data"].append(meta)
         session.write(csv_filename)
 
     with open(OUTFILE_JSON, "w") as json_file:

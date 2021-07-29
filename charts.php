@@ -181,26 +181,22 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
                 .then(function (zip) {
                     zip.file("metadata.json").async("string").then(
 		      function(data) {
+		        // get metadata
 		        var metadata = JSON.parse(data);
 		        showMetadata(elt, metadata);
 
 		        // render charts
-                        for(var name in zip.files) {
-                          if (name.substring(name.lastIndexOf('.') + 1) === "csv") {
-			      var local_name = (' ' + name).slice(1);
-                              zip.file(local_name).async("string").then(
+			for(var chart_idx = 0; chart_idx < metadata.chart_data.length; chart_idx++) {
+			  var local_chart = JSON.parse(JSON.stringify(metadata.chart_data[chart_idx])); // deep copy
+			  showText(elt, JSON.stringify(local_chart))
+			  zip.file(local_chart.filename).async("string").then(
 			        function(data) {
 			          showChart(
-				      metadata.chart_data[local_name].title,
-				      metadata.chart_data[local_name].x_label,
-				      metadata.chart_data[local_name].x_min,
-    				      metadata.chart_data[local_name].x_max,
-				      metadata.chart_data[local_name].y_label,
-				      metadata.chart_data[local_name].y_min,
-    				      metadata.chart_data[local_name].y_max,
+				      local_chart.title,
+				      local_chart.x_label, local_chart.x_min, local_chart.x_max,
+				      local_chart.y_label, local_chart.y_min, local_chart.y_max,
 				      data);
-			        });
-                            }
+			        })
                         }
 		      });
                 });
