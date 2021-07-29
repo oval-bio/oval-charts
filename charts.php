@@ -19,10 +19,11 @@ foreach($media as $attachment) {
     }
 
     function showMetadata(elt, content) {
+        var time_str = new Date(content.timestamp).toString();
         elt.innerHTML +=
 	    "<p>" +
 	      content.first_name + " " + content.last_name + "<br/>" +
-	      content.timestamp
+	      time_str
 	    "</p>";
     }
 
