@@ -1,10 +1,10 @@
 import cProfile
 import logging
 import os
-import pstats
 import subprocess
 import sys
 import unittest
+import zipfile
 
 import click
 
@@ -55,23 +55,13 @@ def test(obj, pattern):
     """
     Run test suite
     """
-    if obj.profiling:
-        logger.info("enabling profiling")
-        pr = cProfile.Profile()
-        pr.enable()
-
-    loader = unittest.TestLoader()
-    suite = loader.discover(
-        os.path.abspath(os.path.dirname(__file__)),
-        pattern=pattern)
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
-
-    if obj.profiling:
-        pr.disable()
-        prof = pstats.Stats(pr, stream=sys.stdout)
-        ps = prof.sort_stats('cumulative')
-        ps.print_stats(300)
+    with oval.core.cli_context(obj):
+        loader = unittest.TestLoader()
+        suite = loader.discover(
+            os.path.abspath(os.path.dirname(__file__)),
+            pattern=pattern)
+        runner = unittest.TextTestRunner(verbosity=2)
+        runner.run(suite)
 
 
 @root.command()
@@ -86,3 +76,13 @@ def flake8(obj):
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
             print("\nThere were flake8 errors!")
+
+
+@root.command()
+@click.pass_obj
+def create(obj):
+    """
+    Create empty oval bundle.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        pass
