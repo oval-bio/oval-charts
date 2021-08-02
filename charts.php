@@ -47,7 +47,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
 
     // Add X axis
     var x = d3.scaleLinear()
-      //.domain(d3.extent(csv_data, function(d) { return d.time; }))
+      //.domain(d3.extent(csv_data, function(d) { return d[chart.x_column]; }))
       .domain([chart.x_min, chart.x_max])
       .range([ 0, width ]);
     xAxis = svg.append("g")
@@ -56,7 +56,7 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
 
     // Add Y axis
     var y = d3.scaleLinear()
-      //.domain(d3.extent(csv_data, function(d) { return d.sample; }))
+      //.domain(d3.extent(csv_data, function(d) { return d[chart.y_column]; }))
       .domain([chart.y_min, chart.y_max])
       .range([ height, 0 ]);
     yAxis = svg.append("g")
@@ -113,8 +113,8 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
       .attr("stroke", "steelblue")
       .attr("stroke-width", 1.5)
       .attr("d", d3.line()
-        .x(function(d) { return x(d.time) })
-        .y(function(d) { return y(d.sample) })
+        .x(function(d) { return x(d[chart.x_column]) })
+        .y(function(d) { return y(d[chart.y_column]) })
         );
 
     // Add the brushing
@@ -149,21 +149,21 @@ var svg = d3.select("#instrument_charts_<?=$attachment->ID;?>")
           .transition()
           .duration(1000)
           .attr("d", d3.line()
-            .x(function(d) { return x(d.time) })
-            .y(function(d) { return y(d.sample) })
+            .x(function(d) { return x(d[chart.x_column]) })
+            .y(function(d) { return y(d[chart.y_column]) })
           )
     }
 
     // If user double click, reinitialize the chart
     svg.on("dblclick",function(){
-      x.domain(d3.extent(csv_data, function(d) { return d.time; }))
+      x.domain(d3.extent(csv_data, function(d) { return d[chart.x_column]; }))
       xAxis.transition().call(d3.axisBottom(x))
       line
         .select('.line')
         .transition()
         .attr("d", d3.line()
-          .x(function(d) { return x(d.time) })
-          .y(function(d) { return y(d.sample) })
+          .x(function(d) { return x(d[chart.x_column]) })
+          .y(function(d) { return y(d[chart.y_column]) })
       )
       //location.reload();
     });
