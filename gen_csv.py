@@ -49,6 +49,7 @@ def gen_chart(
 
     return {
         "chart_type": "line",
+        "source": "default",
         "filename": filename,
         "title": "Test Data",
         "x_label": "Time (s)",
@@ -64,7 +65,6 @@ def gen_chart(
 metadata = {
     "vendor": "oval.bio",
     "version": "1.0.0",
-    "source": "default",
     "timestamp": str(datetime.datetime.now()),
     "first_name": "Test",
     "last_name": "Client",
