@@ -1,11 +1,13 @@
-from contextlib import contextmanager
 import cProfile
+import datetime
+import json
 import logging
 import os
 import pstats
 import sys
 import tempfile
 import zipfile
+from contextlib import contextmanager
 
 import oval
 
@@ -63,7 +65,7 @@ class Bundle(OvalObj):
     """
     Collection of oval.bio generated data.
     """
-    def __init__(bundle_filename):
+    def __init__(self, bundle_filename):
         self._filename = bundle_filename
         self._metadata_filename = "metadata.json"
 

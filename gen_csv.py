@@ -1,8 +1,7 @@
 import csv
 import datetime
-import math
 import json
-import time
+import math
 import uuid
 import zipfile
 
@@ -42,7 +41,7 @@ def gen_chart(
         sample_time = start_time
         inc = (end_time - start_time)/num_samples
         while sample_time < end_time:
-            yt =  amplitude * math.sin(
+            yt = amplitude * math.sin(
                 2*math.pi * freq * sample_time + phase) + y_offset
             inst_writer.writerow([sample_time, yt])
             sample_time += inc

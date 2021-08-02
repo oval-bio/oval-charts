@@ -1,10 +1,9 @@
-import cProfile
 import logging
 import os
 import subprocess
 import sys
 import unittest
-import zipfile
+# import zipfile
 
 import click
 
@@ -76,6 +75,16 @@ def flake8(obj):
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
             print("\nThere were flake8 errors!")
+
+
+@root.command()
+@click.pass_obj
+def version(obj):
+    """
+    Print version
+    """
+    import oval
+    print(oval.__version__)
 
 
 @root.command()
