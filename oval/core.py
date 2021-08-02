@@ -129,7 +129,7 @@ class Bundle(OvalObj):
 
         # then add it to the zip
         with zipfile.ZipFile(self._filename, mode="w") as session:
-            session.write(temp_filename)
+            session.write(temp_filename, self._metadata_filename)
 
         os.remove(temp_filename)
 
@@ -152,6 +152,6 @@ class Bundle(OvalObj):
 
         # then add it to the zip
         with zipfile.ZipFile(self._filename, mode="w") as session:
-            session.write(temp_filename)
+            session.write(temp_filename, self._metadata_filename)
 
         os.remove(temp_filename)

@@ -37,3 +37,58 @@ class TestCore(unittest.TestCase):
         self.assertEqual(
             bundle.read_attribute("test_value2"),
             metadata["test_value2"])
+
+    def test_core_bundle_attributes(self):
+        """
+        Test listing metadata attributes.
+        """
+        # with
+        metadata = {
+            "test_value": 123,
+            "test_value2": 124}
+        bundle = oval.core.Bundle(self._tmpfile)
+
+        # when
+        bundle.create(**metadata)
+
+        # then
+        attributes = bundle.attributes()
+        for key in metadata.keys():
+            self.assertIn(key, attributes)
+
+    def test_core_bundle_write_attribute(self):
+        """
+        Test writing an oval data bundle attribute.
+        """
+        # with
+        metadata = {
+            "test_value": 123,
+            "test_value2": 124}
+        bundle = oval.core.Bundle(self._tmpfile)
+
+        # when
+        bundle.create(**metadata)
+        bundle.write_attribute("test_value3", 1000.0)
+
+        # then
+        self.assertEqual(
+            bundle.read_attribute("test_value3"),
+            1000.0)
+
+    def test_core_bundle_remove_attribute(self):
+        """
+        Test removing an oval data bundle attribute.
+        """
+        # with
+        metadata = {
+            "test_value": 123,
+            "test_value2": 124}
+        bundle = oval.core.Bundle(self._tmpfile)
+
+        # when
+        bundle.create(**metadata)
+        bundle.remove_attribute("test_value2")
+
+        # then
+        self.assertIn("test_value", bundle.attributes())
+        self.assertNotIn("test_value2", bundle.attributes())
