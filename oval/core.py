@@ -87,6 +87,8 @@ class Bundle(OvalObj):
         with tempfile.NamedTemporaryFile(delete=False) as f:
             temp_filename = f.name
 
+        logger.debug("Creating bundle: {}".format(self._filename))
+
         with zipfile.ZipFile(self._filename, mode="w") as session:
             with open(temp_filename, "w") as json_file:
                 json.dump(bundle_metadata, json_file)
