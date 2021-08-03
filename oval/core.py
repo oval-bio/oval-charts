@@ -104,6 +104,12 @@ class Bundle(OvalObj):
             return list(
                 json.loads(session.read(self._metadata_filename)).keys())
 
+    def has_attribute(self, attribute):
+        """
+        Return whether the attribute exists in the bundle metadata.
+        """
+        return attribute in self.attributes()
+
     def read_attribute(self, attribute):
         """
         Returns the specified attribute from the bundle.
@@ -157,3 +163,15 @@ class Bundle(OvalObj):
             session.write(temp_filename, self._metadata_filename)
 
         os.remove(temp_filename)
+
+    def num_charts(self):
+        """
+        Return the number of charts in the bundle.
+        """
+        return len(self.read_attribute("chart_data"))
+
+    def add_chart(self):
+        """
+        Add a chart to the bundle.
+        """
+        pass

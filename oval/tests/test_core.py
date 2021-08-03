@@ -31,6 +31,7 @@ class TestCore(unittest.TestCase):
         bundle.create(**metadata)
 
         # then
+        self.assertTrue(bundle.has_attribute("test_value"))
         self.assertEqual(
             bundle.read_attribute("test_value"),
             metadata["test_value"])
@@ -92,3 +93,16 @@ class TestCore(unittest.TestCase):
         # then
         self.assertIn("test_value", bundle.attributes())
         self.assertNotIn("test_value2", bundle.attributes())
+
+    def test_core_num_charts_0(self):
+        """
+        Test num charts default.
+        """
+        # with
+        bundle = oval.core.Bundle(self._tmpfile)
+
+        # when
+        bundle.create()
+
+        # then
+        self.assertEqual(bundle.num_charts(), 0)
