@@ -53,7 +53,7 @@ def root(context, log, log_level, profiling, bundle):
 @click.pass_obj
 def test(obj, pattern):
     """
-    Run test suite
+    Run test suite.
     """
     with oval.core.cli_context(obj):
         loader = unittest.TestLoader()
@@ -68,7 +68,7 @@ def test(obj, pattern):
 @click.pass_obj
 def flake8(obj):
     """
-    Run flake8
+    Run flake8.
     """
     try:
         subprocess.check_call([sys.executable, '-m', 'flake8'])
@@ -107,3 +107,26 @@ def info(obj):
     with oval.core.cli_context(obj) as bundle:
         print(json.dumps(
             bundle.read_attributes(), indent=4, sort_keys=True))
+
+
+@root.command()
+@click.pass_obj
+@click.argument('args', nargs=-1)
+def set(obj, args):
+    """
+    Set bundle metadata.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        new_metadata = dict(arg.split(':') for arg in args)
+        bundle.update_metadata(new_metadata)
+
+
+@root.command()
+@click.pass_obj
+@click.argument('args', nargs=-1)
+def remove(obj, args):
+    """
+    Remove the specified attributes.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        bundle.remove_attributes(args)

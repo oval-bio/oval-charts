@@ -167,8 +167,15 @@ class Bundle(OvalObj):
         """
         Remove value from metadata.
         """
+        self.remove_attributes([attribute])
+
+    def remove_attributes(self, attributes):
+        """
+        Remove values from metadata.
+        """
         metadata = self._get_metadata()
-        del metadata[attribute]
+        for attrib in attributes:
+            del metadata[attrib]
         self._set_metadata(metadata)
 
     def num_charts(self):
