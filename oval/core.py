@@ -85,22 +85,11 @@ class Bundle(OvalObj):
             "vendor": "oval.bio",
             "version": oval.__version__,
             "create_time": str(datetime.datetime.now()),
-            "timestamp": str(datetime.datetime.now()),
             "chart_data": []}
         bundle_metadata = default_metadata.copy()
         bundle_metadata.update(kwargs)
 
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            temp_filename = f.name
-
-        logger.debug("Creating bundle: {}".format(self._filename))
-
-        with zipfile.ZipFile(self._filename, mode="w") as session:
-            with open(temp_filename, "w") as json_file:
-                json.dump(bundle_metadata, json_file)
-            session.write(temp_filename, arcname=self._metadata_filename)
-
-        os.remove(temp_filename)
+        self._set_metadata(bundle_metadata)
 
     def attributes(self):
         """
@@ -157,6 +146,14 @@ class Bundle(OvalObj):
 
         # cleanup temp file
         os.remove(temp_filename)
+
+    def update_metadata(self, new_metadata):
+        """
+        Updates metadata.
+        """
+        metadata = self._get_metadata()
+        metadata.update(new_metadata)
+        self._set_metadata(metadata)
 
     def write_attribute(self, attribute, value):
         """
@@ -216,6 +213,9 @@ class Bundle(OvalObj):
             "dataframe": kwargs}
 
         metadata = self._get_metadata()
+        if "chart_data" not in metadata or \
+           type(metadata["chart_data"]) != list:
+            metadata["chart_data"] = []
         metadata["chart_data"].append(chart_metadata)
         self._set_metadata(metadata)
 
@@ -235,4 +235,4 @@ class Bundle(OvalObj):
         Returns chart at the specified index.
         """
         metadata = self._get_metadata()
-        metadata["chart_data"][index]
+        return metadata["chart_data"][index]
