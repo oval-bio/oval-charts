@@ -11,9 +11,15 @@ from contextlib import contextmanager
 
 import oval
 
+import pandas as pd
+
 
 logger = logging.getLogger(__name__)
 LOG_FORMAT = '%(asctime)s %(levelname)-8.8s [%(name)s:%(lineno)s] %(message)s'
+
+
+class BundleError(RuntimeError):
+    pass
 
 
 def setup_logging(
@@ -48,7 +54,7 @@ def cli_context(obj):
         pr = cProfile.Profile()
         pr.enable()
 
-    yield obj.bundle
+    yield Bundle(obj.bundle)
 
     if obj.profiling:
         pr.disable()
@@ -63,7 +69,7 @@ class OvalObj(object):
 
 class Bundle(OvalObj):
     """
-    Collection of oval.bio generated data.
+    Collection of oval.bio generated chart data.
     """
     def __init__(self, bundle_filename):
         self._filename = bundle_filename
@@ -104,6 +110,13 @@ class Bundle(OvalObj):
             return list(
                 json.loads(session.read(self._metadata_filename)).keys())
 
+    def read_attributes(self):
+        """
+        Returns entire bundle metadata.
+        """
+        with zipfile.ZipFile(self._filename, mode="r") as session:
+            return json.loads(session.read(self._metadata_filename))
+
     def has_attribute(self, attribute):
         """
         Return whether the attribute exists in the bundle metadata.
@@ -118,16 +131,19 @@ class Bundle(OvalObj):
             return json.loads(
                 session.read(self._metadata_filename))[attribute]
 
-    def write_attribute(self, attribute, value):
+    def _get_metadata(self):
         """
-        Write attribute value to the bundle.
+        Return existing attributes
         """
-        # read existing attributes
         with zipfile.ZipFile(self._filename, mode="r") as session:
-            metadata = json.loads(session.read(self._metadata_filename))
+            return json.loads(session.read(self._metadata_filename))
 
-        # update the attributes
-        metadata.update({attribute: value})
+    def _set_metadata(self, metadata):
+        """
+        Sets bundle metadata
+        """
+        # update timestamp
+        metadata["timestamp"] = str(datetime.datetime.now())
 
         # write it to a temp file
         with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -139,30 +155,24 @@ class Bundle(OvalObj):
         with zipfile.ZipFile(self._filename, mode="w") as session:
             session.write(temp_filename, self._metadata_filename)
 
+        # cleanup temp file
         os.remove(temp_filename)
+
+    def write_attribute(self, attribute, value):
+        """
+        Write attribute value to the bundle.
+        """
+        metadata = self._get_metadata()
+        metadata[attribute] = value
+        self._set_metadata(metadata)
 
     def remove_attribute(self, attribute):
         """
         Remove value from metadata.
         """
-        # read existing attributes
-        with zipfile.ZipFile(self._filename, mode="r") as session:
-            metadata = json.loads(session.read(self._metadata_filename))
-
-        # update the attributes
+        metadata = self._get_metadata()
         del metadata[attribute]
-
-        # write it to a temp file
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            temp_filename = f.name
-        with open(temp_filename, "w") as json_file:
-            json.dump(metadata, json_file)
-
-        # then add it to the zip
-        with zipfile.ZipFile(self._filename, mode="w") as session:
-            session.write(temp_filename, self._metadata_filename)
-
-        os.remove(temp_filename)
+        self._set_metadata(metadata)
 
     def num_charts(self):
         """
@@ -170,8 +180,59 @@ class Bundle(OvalObj):
         """
         return len(self.read_attribute("chart_data"))
 
-    def add_chart(self):
+    def add_chart(self, csv_filename, **kwargs):
         """
-        Add a chart to the bundle.
+        Add csv data to the bundle.
         """
-        pass
+        df = pd.read_csv(csv_filename, **kwargs)
+
+        if len(df.columns) < 2:
+            raise BundleError("Not enough columns in csv")
+
+        x_column = df.columns[0]
+        y_column = df.columns[1]
+        x_min = df[x_column].min()
+        x_max = df[x_column].max()
+        y_min = df[y_column].min()
+        y_max = df[y_column].max()
+        arcname = os.path.basename(csv_filename)
+
+        default_title = os.path.basename(
+            os.path.splitext(csv_filename)[0])
+        chart_metadata = {
+            "chart_type": "line",
+            "source": "default",
+            "filename": arcname,
+            "mimetype": "text/csv",
+            "title": default_title,
+            "x_label": x_column,
+            "x_min": x_min,
+            "x_max": x_max,
+            "y_label": y_column,
+            "y_min": y_min,
+            "y_max": y_max,
+            "x_column": x_column,
+            "y_column": y_column,
+            "dataframe": kwargs}
+
+        metadata = self._get_metadata()
+        metadata["chart_data"].append(chart_metadata)
+        self._set_metadata(metadata)
+
+        with zipfile.ZipFile(self._filename, mode="w") as session:
+            session.write(csv_filename, arcname=arcname)
+
+    def remove_chart(self, index):
+        """
+        Removes chart at the specified index.
+        """
+        metadata = self._get_metadata()
+        metadata["chart_data"].pop(index)
+        self._set_metadata(metadata)
+
+    def get_chart(self, index):
+        """
+        Returns chart at the specified index.
+        """
+        metadata = self._get_metadata()
+        metadata["chart_data"][index]

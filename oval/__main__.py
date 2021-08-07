@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import subprocess
@@ -94,4 +95,15 @@ def create(obj):
     Create empty oval bundle.
     """
     with oval.core.cli_context(obj) as bundle:
-        pass
+        bundle.create()
+
+
+@root.command()
+@click.pass_obj
+def info(obj):
+    """
+    Print bundle metadata.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        print(json.dumps(
+            bundle.read_attributes(), indent=4, sort_keys=True))
