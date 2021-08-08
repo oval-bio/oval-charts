@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pstats
+import shutil
 import sys
 import tempfile
 import zipfile
@@ -61,6 +62,27 @@ def cli_context(obj):
         prof = pstats.Stats(pr, stream=sys.stdout)
         ps = prof.sort_stats('cumulative')
         ps.print_stats(300)
+
+
+@contextmanager
+def edit_archive(zip_file):
+    """
+    Context to extract zip file to a temp directory,
+    yielding that then re-archiving the directory contents.
+    """
+    with tempfile.TemporaryDirectory() as extract_dir:
+        if os.path.exists(zip_file):
+            try:
+                with zipfile.ZipFile(zip_file, mode="r") as archive:
+                    archive.extractall(extract_dir)
+            except zipfile.BadZipFile:
+                pass
+        yield extract_dir
+        with zipfile.ZipFile(zip_file, mode="w") as archive:
+            for root, dirs, files in os.walk(extract_dir):
+                for name in files:
+                    logger.debug("archiving: {}".format(name))
+                    archive.write(os.path.join(root, name), name)
 
 
 class OvalObj(object):
@@ -131,21 +153,14 @@ class Bundle(OvalObj):
         """
         Sets bundle metadata
         """
-        # update timestamp
-        metadata["timestamp"] = str(datetime.datetime.now())
+        with edit_archive(self._filename) as arc_dir:
+            # update timestamp
+            metadata["timestamp"] = str(datetime.datetime.now())
 
-        # write it to a temp file
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            temp_filename = f.name
-        with open(temp_filename, "w") as json_file:
-            json.dump(metadata, json_file)
-
-        # then add it to the zip
-        with zipfile.ZipFile(self._filename, mode="w") as session:
-            session.write(temp_filename, self._metadata_filename)
-
-        # cleanup temp file
-        os.remove(temp_filename)
+            # replace the metadata file
+            with open(os.path.join(
+                    arc_dir, self._metadata_filename), "w") as json_file:
+                json.dump(metadata, json_file, indent=4, sort_keys=True)
 
     def update_metadata(self, new_metadata):
         """
@@ -186,9 +201,11 @@ class Bundle(OvalObj):
 
     def add_chart(self, csv_filename, **kwargs):
         """
-        Add csv data to the bundle.
+        Add csv data to the bundle. Keyword args are added
+        to chart metadata.
         """
-        df = pd.read_csv(csv_filename, **kwargs)
+        # TODO: support what pandas supports
+        df = pd.read_csv(csv_filename)
 
         if len(df.columns) < 2:
             raise BundleError("Not enough columns in csv")
@@ -201,8 +218,7 @@ class Bundle(OvalObj):
         y_max = df[y_column].max()
         arcname = os.path.basename(csv_filename)
 
-        default_title = os.path.basename(
-            os.path.splitext(csv_filename)[0])
+        default_title = os.path.basename(csv_filename)
         chart_metadata = {
             "chart_type": "line",
             "source": "default",
@@ -216,8 +232,8 @@ class Bundle(OvalObj):
             "y_min": y_min,
             "y_max": y_max,
             "x_column": x_column,
-            "y_column": y_column,
-            "dataframe": kwargs}
+            "y_column": y_column}
+        chart_metadata.update(kwargs)
 
         metadata = self._get_metadata()
         if "chart_data" not in metadata or \
@@ -226,8 +242,8 @@ class Bundle(OvalObj):
         metadata["chart_data"].append(chart_metadata)
         self._set_metadata(metadata)
 
-        with zipfile.ZipFile(self._filename, mode="w") as session:
-            session.write(csv_filename, arcname=arcname)
+        with edit_archive(self._filename) as arc_dir:
+            shutil.copy2(csv_filename, os.path.join(arc_dir, arcname))
 
     def remove_chart(self, index):
         """
@@ -237,9 +253,29 @@ class Bundle(OvalObj):
         metadata["chart_data"].pop(index)
         self._set_metadata(metadata)
 
+    def remove_charts(self, indices):
+        """
+        Removes charts at the specified indices all at once.
+        """
+        metadata = self._get_metadata()
+        metadata["chart_data"] = [
+            i for j, i in enumerate(metadata["chart_data"]) \
+            if j not in indices]
+        self._set_metadata(metadata)
+
     def get_chart(self, index):
         """
         Returns chart at the specified index.
         """
         metadata = self._get_metadata()
         return metadata["chart_data"][index]
+
+    def list_charts(self):
+        """
+        Return a list of indexes and chart titles.
+        """
+        metadata = self._get_metadata()
+        chart_titles = []
+        for chart_data in metadata["chart_data"]:
+            chart_titles.append(chart_data["title"])
+        return chart_titles

@@ -126,3 +126,21 @@ class TestCore(unittest.TestCase):
 
         # then
         self.assertEqual(bundle.num_charts(), 0)
+
+    def test_core_edit_archive(self):
+        """
+        Test edit_archive context.
+        """
+        # with
+        bundle_file = self._tmpfile
+
+        # when
+        with oval.core.edit_archive(bundle_file) as arc_dir:
+            with open(os.path.join(arc_dir, "testfile"), "w") as f:
+                f.write("asdf")
+
+        # then
+        with zipfile.ZipFile(self._tmpfile, mode="r") as archive:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                archive.extractall(tmpdir)
+                self.assertTrue(os.path.exists(os.path.join(tmpdir, "testfile")))
