@@ -143,4 +143,5 @@ class TestCore(unittest.TestCase):
         with zipfile.ZipFile(self._tmpfile, mode="r") as archive:
             with tempfile.TemporaryDirectory() as tmpdir:
                 archive.extractall(tmpdir)
-                self.assertTrue(os.path.exists(os.path.join(tmpdir, "testfile")))
+                self.assertTrue(
+                    os.path.exists(os.path.join(tmpdir, "testfile")))

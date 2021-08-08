@@ -10,10 +10,10 @@ import unittest
 # import zipfile
 
 import click
-from tabulate import tabulate
 
 import oval.core
 
+from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
 

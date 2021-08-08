@@ -259,7 +259,7 @@ class Bundle(OvalObj):
         """
         metadata = self._get_metadata()
         metadata["chart_data"] = [
-            i for j, i in enumerate(metadata["chart_data"]) \
+            i for j, i in enumerate(metadata["chart_data"])
             if j not in indices]
         self._set_metadata(metadata)
 
