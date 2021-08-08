@@ -1,14 +1,25 @@
 import cProfile
 import datetime
 import json
+# from email.mime.application import MIMEApplication
 import logging
+import mimetypes
 import os
 import pstats
 import shutil
+import smtplib
+import ssl
 import sys
 import tempfile
 import zipfile
 from contextlib import contextmanager
+from email import encoders
+from email.mime.audio import MIMEAudio
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
 
 import oval
 
@@ -83,6 +94,79 @@ def edit_archive(zip_file):
                 for name in files:
                     logger.debug("archiving: {}".format(name))
                     archive.write(os.path.join(root, name), name)
+
+
+def send_email(from_addr, to_addrs, subject, body, files=[], **kwargs):
+    logger.debug("sending email: {} -> {} :: subject: {} :: body: {}".format(
+        from_addr, to_addrs, subject, body))
+
+    if not isinstance(to_addrs, list):
+        to_addrs = [to_addrs]
+
+    msg = MIMEMultipart()
+    msg['From'] = from_addr
+    msg['To'] = COMMASPACE.join(to_addrs)
+    msg['Date'] = formatdate(localtime=True)
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+    if "html_body" in kwargs:
+        html_body = kwargs["html_body"]
+    else:
+        html_body = "<p>{}</p>".format(body)
+    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+
+    for f in files:
+        name, realname, mimetype = f
+
+        if not bool(mimetype):
+            ctype, encoding = mimetypes.guess_type(name)
+            if ctype is None or encoding is not None:
+                # No guess could be made, or the file is encoded
+                # (compressed), so use a generic bag-of-bits type.
+                ctype = 'application/octet-stream'
+            maintype, subtype = ctype.split('/', 1)
+        else:
+            maintype, subtype = mimetype.split('/', 1)
+
+        logger.info("attachment: {} : {} : {}/{}".format(
+            name, realname, maintype, subtype))
+
+        switch = {
+            "text": MIMEText,
+            "image": MIMEImage,
+            "audio": MIMEAudio,
+        }
+        if maintype in switch:
+            with open(name, "rb") as fil:
+                part = switch[maintype](fil.read(), _subtype=subtype)
+        else:
+            with open(name, "rb") as fil:
+                part = MIMEBase(maintype, subtype)
+                part.set_payload(fil.read())
+            # Encode the payload using Base64
+            encoders.encode_base64(part)
+        # After the file is closed
+        part.add_header('Content-Disposition', 'attachment', filename=realname)
+        msg.attach(part)
+
+    msg_str = msg.as_string()
+    smtp = None
+    try:
+        smtp = smtplib.SMTP(kwargs["smtp_host"], kwargs["smtp_port"])
+        context = ssl.create_default_context()
+        smtp.starttls(context=context)
+        smtp.login(kwargs["smtp_user"], kwargs["smtp_password"])
+        for to_addr in to_addrs:
+            log_msg = "sending email from {} to {}: {}".format(
+                from_addr, to_addr, subject)
+            logger.debug(log_msg)
+            smtp.sendmail(from_addr, to_addr, msg_str)
+    except Exception as e:
+        logger.exception(str(e))
+    finally:
+        if smtp is not None:
+            smtp.quit()
 
 
 class OvalObj(object):
