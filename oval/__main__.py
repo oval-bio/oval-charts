@@ -298,15 +298,15 @@ def publish(
         html = None
         title = None
         if "text" in metadata:
-            text = bundle.read(metadata["text"])
+            text = bundle.read_file(metadata["text"]).decode()
         if "html" in metadata:
-            html = bundle.read(metadata["html"])
+            html = bundle.read_file(metadata["html"]).decode()
         if "title" in metadata:
             title = metadata["title"]
 
         kwargs = {
             "smtp_host": smtp_host,
-            "smtp_port": smtp_port,
+            "smtp_port": int(smtp_port),
             "smtp_user": smtp_user,
             "smtp_password": smtp_password}
 

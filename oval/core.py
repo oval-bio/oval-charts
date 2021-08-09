@@ -211,6 +211,13 @@ class Bundle(OvalObj):
             return list(
                 json.loads(session.read(self._metadata_filename)).keys())
 
+    def read_file(self, arcname):
+        """
+        Returns the contents of the specified file in the bundle.
+        """
+        with zipfile.ZipFile(self._filename, mode="r") as session:
+            return session.read(arcname)
+
     def read_attributes(self):
         """
         Returns entire bundle metadata.
