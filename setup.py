@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def get_version():
@@ -23,6 +23,7 @@ setup(
     author="Joe Rivera",
     author_email="j@jriv.us",
     description="Oval.bio session data bundle utilities",
+    packages=find_packages(),
     url="https://github.com/transfix/oval-charts",
     zip_safe=True,
     entry_points={
