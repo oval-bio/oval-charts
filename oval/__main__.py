@@ -311,9 +311,9 @@ def publish(
             "smtp_password": smtp_password}
 
         if html is not None:
-            kwargs["html"] = html
+            kwargs["html_body"] = html
         if title is None:
             title = "Session {}".format(os.path.basename(obj.bundle))
         files = [(obj.bundle, os.path.basename(obj.bundle), None)]
         oval.core.send_email(
-            from_addr, to_addr, title, body, files=files, **kwargs)
+            from_addr, to_addr, title, text, files=files, **kwargs)
