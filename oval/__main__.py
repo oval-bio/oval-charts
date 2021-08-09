@@ -185,14 +185,34 @@ def list(obj):
 @click.pass_obj
 @click.option(
     '--filename', '-f', help="chart data filename")
-@click.argument('args', nargs=-1)
-def add_chart(obj, filename, args):
+@click.option(
+    '--key', '-k', multiple=True, help="Set attribute key")
+@click.option(
+    '--value', '-v', multiple=True, help="Set attribute value")
+def add_chart(obj, filename, key, value):
     """
     Add chart data to the bundle.
     """
     with oval.core.cli_context(obj) as bundle:
-        chart_kwargs = dict(arg.split(':') for arg in args)
+        chart_kwargs = dict(zip(key, value))
         bundle.add_chart(filename, **chart_kwargs)
+
+
+@root.command()
+@click.pass_obj
+@click.option(
+    '--index', '-i', help="chart data index")
+@click.option(
+    '--key', '-k', multiple=True, help="Set attribute key")
+@click.option(
+    '--value', '-v', multiple=True, help="Set attribute value")
+def edit_chart(obj, index, key, value):
+    """
+    Edit chart attributes in the bundle.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        chart_kwargs = dict(zip(key, value))
+        bundle.edit_chart(int(index), **chart_kwargs)
 
 
 @root.command()

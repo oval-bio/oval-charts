@@ -342,6 +342,14 @@ class Bundle(OvalObj):
         with edit_archive(self._filename) as arc_dir:
             shutil.copy2(csv_filename, os.path.join(arc_dir, arcname))
 
+    def edit_chart(self, chart_idx, **new_attributes):
+        """
+        Update chart with specified attributes.
+        """
+        metadata = self._get_metadata()
+        metadata["chart_data"][chart_idx].update(new_attributes)
+        self._set_metadata(metadata)
+
     def remove_chart(self, index):
         """
         Removes chart at the specified index.
