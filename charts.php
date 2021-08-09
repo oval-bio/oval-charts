@@ -22,7 +22,7 @@ foreach($media as $attachment) {
         var time_str = new Date(content.timestamp).toString();
         elt.innerHTML +=
 	    "<p>" +
-	      content.first_name + " " + content.last_name + "<br/>" +
+	      content.title + "<br/>" +
 	      time_str
 	    "</p>";
     }
