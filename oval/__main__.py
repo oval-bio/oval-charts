@@ -3,11 +3,11 @@ import json
 import logging
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
-# import zipfile
 
 import click
 
@@ -109,20 +109,55 @@ def info(obj):
     Print bundle metadata.
     """
     with oval.core.cli_context(obj) as bundle:
-        print(json.dumps(
-            bundle.read_attributes(), indent=4, sort_keys=True))
+        metadata = bundle.read_attributes()
+        num_charts = len(metadata["chart_data"])
+        del metadata["chart_data"]
+        metadata["num_charts"] = num_charts
+        print(tabulate(metadata.items()))
 
 
 @root.command()
 @click.pass_obj
-@click.argument('args', nargs=-1)
-def set(obj, args):
+@click.option(
+    '--key', '-k', multiple=True, help="Key corresponding to value argument")
+@click.option(
+    '--value', '-v', multiple=True, help="Value corresponding to key argument")
+def set(obj, key, value):
     """
     Set bundle metadata attributes.
     """
     with oval.core.cli_context(obj) as bundle:
-        new_metadata = dict(arg.split(':') for arg in args)
-        bundle.update_metadata(new_metadata)
+        bundle.update_metadata(dict(zip(key, value)))
+
+
+@root.command()
+@click.pass_obj
+@click.option(
+    '--filename', '-f', help="File containing text to use for the bundle.")
+def set_text(obj, filename):
+    """
+    Set bundle text that shows up on published reports.
+    """
+    arcname = os.path.basename(filename)
+    with oval.core.edit_archive(obj.bundle) as arc_dir:
+        shutil.copy2(filename, os.path.join(arc_dir, arcname))
+    with oval.core.cli_context(obj) as bundle:
+        bundle.write_attribute("text", arcname)
+
+
+@root.command()
+@click.pass_obj
+@click.option(
+    '--filename', '-f', help="File containing html to use for the bundle.")
+def set_html(obj, filename):
+    """
+    Set bundle html that shows up on published reports.
+    """
+    arcname = os.path.basename(filename)
+    with oval.core.edit_archive(obj.bundle) as arc_dir:
+        shutil.copy2(filename, os.path.join(arc_dir, arcname))
+    with oval.core.cli_context(obj) as bundle:
+        bundle.write_attribute("html", arcname)
 
 
 @root.command()
@@ -223,3 +258,62 @@ def remove_chart(obj, args):
     """
     with oval.core.cli_context(obj) as bundle:
         bundle.remove_charts([int(i) for i in args])
+
+
+@root.command()
+@click.pass_obj
+@click.argument('idx', nargs=1)
+def chart_info(obj, idx):
+    """
+    Print chart information.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        print(tabulate(bundle.get_chart(int(idx)).items()))
+
+
+@root.command()
+@click.pass_obj
+@click.option(
+    '--from-addr', '-f', help="From email address.")
+@click.option(
+    '--to-addr', '-t', help="To email address.")
+@click.option(
+    '--smtp-host', '-s', help="SMTP host")
+@click.option(
+    '--smtp-port', '-p', help="SMTP port")
+@click.option(
+    '--smtp-user', '-u', help="SMTP user")
+@click.option(
+    '--smtp-password', '-p', help="SMTP password")
+def publish(
+        obj, from_addr, to_addr, smtp_host, smtp_port,
+        smtp_user, smtp_password):
+    """
+    Publish the bundle by email.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        metadata = bundle.read_attributes()
+
+        text = ""
+        html = None
+        title = None
+        if "text" in metadata:
+            text = bundle.read(metadata["text"])
+        if "html" in metadata:
+            html = bundle.read(metadata["html"])
+        if "title" in metadata:
+            title = metadata["title"]
+
+        kwargs = {
+            "smtp_host": smtp_host,
+            "smtp_port": smtp_port,
+            "smtp_user": smtp_user,
+            "smtp_password": smtp_password}
+
+        if html is not None:
+            kwargs["html"] = html
+        if title is None:
+            title = "Session {}".format(os.path.basename(obj.bundle))
+        files = [(obj.bundle, os.path.basename(obj.bundle), None)]
+        oval.core.send_email(
+            from_addr, to_addr, title, body, files=files, **kwargs)

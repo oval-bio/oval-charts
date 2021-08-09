@@ -181,6 +181,12 @@ class Bundle(OvalObj):
         self._filename = bundle_filename
         self._metadata_filename = "metadata.json"
 
+    def filename():
+        """
+        Bundle filename.
+        """
+        return self._filename
+
     def create(self, **kwargs):
         """
         Creates an empty oval.bio session data bundle.
