@@ -7,6 +7,7 @@ This is a tool to bundle CSVs with metadata then publish them via email. The goa
 To install, enter a shell with python/pip and unzip and enter the source directory and enter the following commands:
 
 > pip install -r requirements.txt
+
 > pip install -e .
 
 Then you should have an oval​ command in the path.
@@ -23,6 +24,7 @@ To run unit tests
 To quickly test the workflow with generated data and all defaults, first run the following commands:
 
 > oval create
+
 > oval gen-chart
 
 Then create a file in the current working directory called bundle.txt with the contents:
@@ -32,6 +34,7 @@ Then create a file in the current working directory called bundle.txt with the c
 This is needed so the Wordpress plugin XYZ PHP Snippets can expand the chart rendering html and javascript. The snippet is the content of charts.php in the repo. Next, run:
 
 > oval set-text bundle.txt
+
 > oval --log-level=DEBUG publish -f from@email.com -t to@email.com -s mx.email.com -p 587 -u smtp-user -p password
 
 The SMTP server specified when publishing should support SSL.

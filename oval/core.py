@@ -309,10 +309,10 @@ class Bundle(OvalObj):
 
         x_column = df.columns[0]
         y_column = df.columns[1]
-        x_min = df[x_column].min()
-        x_max = df[x_column].max()
-        y_min = df[y_column].min()
-        y_max = df[y_column].max()
+        x_min = float(df[x_column].min())
+        x_max = float(df[x_column].max())
+        y_min = float(df[y_column].min())
+        y_max = float(df[y_column].max())
         arcname = os.path.basename(csv_filename)
 
         default_title = os.path.basename(csv_filename)
