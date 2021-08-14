@@ -313,6 +313,16 @@ class Bundle(OvalObj):
         x_max = float(df[x_column].max())
         y_min = float(df[y_column].min())
         y_max = float(df[y_column].max())
+
+        if pd.isna(x_min):
+            logger.warning("x_min is NaN for column {}".format(x_column))
+        if pd.isna(x_max):
+            logger.warning("x_max is NaN for column {}".format(x_column))
+        if pd.isna(y_min):
+            logger.warning("y_min is NaN for column {}".format(y_column))
+        if pd.isna(y_max):
+            logger.warning("y_max is NaN for column {}".format(y_column))
+
         arcname = os.path.basename(csv_filename)
 
         default_title = os.path.basename(csv_filename)
