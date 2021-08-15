@@ -200,19 +200,57 @@ def add_chart(obj, filename, key, value):
 
 @root.command()
 @click.pass_obj
-@click.option(
-    '--index', '-i', help="chart data index")
-@click.option(
-    '--key', '-k', multiple=True, help="Set attribute key")
-@click.option(
-    '--value', '-v', multiple=True, help="Set attribute value")
+@click.argument('index')
+@click.argument('key')
+@click.argument('value')
 def edit_chart(obj, index, key, value):
     """
-    Edit chart attributes in the bundle.
+    Edit chart at index INDEX to include KEY, VALUE.
     """
     with oval.core.cli_context(obj) as bundle:
         chart_kwargs = dict(zip(key, value))
         bundle.edit_chart(int(index), **chart_kwargs)
+
+
+@root.command()
+@click.pass_obj
+@click.argument('index')
+@click.argument('filename')
+def copy_chart(obj, index, filename):
+    """
+    Copy chart at INDEX to FILENAME with TITLE.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        bundle.copy_chart(int(index), filename)
+
+
+@root.command()
+@click.pass_obj
+@click.argument('index')
+@click.argument('column', nargs=-1)
+@click.option(
+    '--range-min', '-i', help="Range minimum", default=0)
+@click.option(
+    '--range-max', '-j', help="Range maximum", default=1)
+def rescale_chart_data(obj, index, column, range_min, range_max):
+    """
+    Rescales the COLUMNs of chart INDEX to be between
+    RANGE_MIN and RANGE_MAX.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        bundle.rescale_chart_data(
+            int(index), *column, feature_range=(range_min, range_max))
+
+
+@root.command()
+@click.pass_obj
+@click.argument('index')
+def chart_data_columns(obj, index):
+    """
+    Return chart data column names.
+    """
+    with oval.core.cli_context(obj) as bundle:
+        print(tabulate(enumerate(bundle.chart_data_columns(int(index)))))
 
 
 @root.command()

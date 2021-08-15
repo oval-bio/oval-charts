@@ -20,6 +20,7 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
+from sklearn.preprocessing import MinMaxScaler
 
 import oval
 
@@ -301,7 +302,7 @@ class Bundle(OvalObj):
         Add csv data to the bundle. Keyword args are added
         to chart metadata.
         """
-        # TODO: support what pandas supports
+        # TODO: support types that pandas supports
         df = pd.read_csv(csv_filename)
 
         if len(df.columns) < 2:
@@ -313,6 +314,7 @@ class Bundle(OvalObj):
         x_max = float(df[x_column].max())
         y_min = float(df[y_column].min())
         y_max = float(df[y_column].max())
+        columns = list(df.columns)
 
         if pd.isna(x_min):
             logger.warning("x_min is NaN for column {}".format(x_column))
@@ -329,9 +331,12 @@ class Bundle(OvalObj):
         chart_metadata = {
             "chart_type": "line",
             "source": "default",
+            "create_time": str(datetime.datetime.now()),
+            "modify_time": str(datetime.datetime.now()),
             "filename": arcname,
             "mimetype": "text/csv",
             "title": default_title,
+            "columns": columns,
             "x_label": x_column,
             "x_min": x_min,
             "x_max": x_max,
@@ -343,6 +348,7 @@ class Bundle(OvalObj):
         chart_metadata.update(kwargs)
 
         metadata = self._get_metadata()
+        idx = len(metadata["chart_data"])
         if "chart_data" not in metadata or \
            type(metadata["chart_data"]) != list:
             metadata["chart_data"] = []
@@ -351,12 +357,14 @@ class Bundle(OvalObj):
 
         with edit_archive(self._filename) as arc_dir:
             shutil.copy2(csv_filename, os.path.join(arc_dir, arcname))
+        return idx
 
     def edit_chart(self, chart_idx, **new_attributes):
         """
         Update chart with specified attributes.
         """
         metadata = self._get_metadata()
+        new_attributes["modify_time"] = str(datetime.datetime.now())
         metadata["chart_data"][chart_idx].update(new_attributes)
         self._set_metadata(metadata)
 
@@ -372,6 +380,7 @@ class Bundle(OvalObj):
         """
         Removes charts at the specified indices all at once.
         """
+        # TODO: add a flag to remove the file too
         metadata = self._get_metadata()
         metadata["chart_data"] = [
             i for j, i in enumerate(metadata["chart_data"])
@@ -394,3 +403,62 @@ class Bundle(OvalObj):
         for chart_data in metadata["chart_data"]:
             chart_titles.append(chart_data["title"])
         return chart_titles
+
+    def copy_chart(self, index, new_filename):
+        """
+        Copies chart at specified index and adds it to the end,
+        using the title name specified.
+        """
+        chart = self.get_chart(index)
+        with tempfile.TemporaryDirectory() as copy_dir:
+            with edit_archive(self._filename) as arc_dir:
+                shutil.copy2(
+                    os.path.join(arc_dir, chart["filename"]),
+                    os.path.join(copy_dir, new_filename))
+            return self.add_chart(
+                os.path.join(copy_dir, new_filename))
+
+    def rescale_chart_data(self, index, *columns, **kwargs):
+        """
+        Rescales chart data to specified feature_range keyword argument.
+        Default is (0, 1).
+        """
+        feature_range = (0, 1)
+        if "feature_range" in kwargs:
+            feature_range = kwargs["feature_range"]
+
+        chart = self.get_chart(index)
+        with edit_archive(self._filename) as arc_dir:
+            fn = os.path.join(arc_dir, chart["filename"])
+            df = pd.read_csv(fn)
+            min_max_scaler = MinMaxScaler(feature_range=feature_range)
+            df[[*columns]] = min_max_scaler.fit_transform(df[[*columns]])
+            df.to_csv(fn)
+
+            # update chart metadata
+            with open(os.path.join(
+                    arc_dir, self._metadata_filename), "r") as fp:
+                metadata = json.load(fp)
+            x_column = df.columns[0]
+            y_column = df.columns[1]
+            metadata["chart_data"][index].update({
+                "modify_time": str(datetime.datetime.now()),
+                "columns": list(df.columns),
+                "x_label": df.columns[0],
+                "x_min": float(df[x_column].min()),
+                "x_max": float(df[x_column].max()),
+                "y_label": df.columns[1],
+                "y_min": float(df[y_column].min()),
+                "y_max": float(df[y_column].max()),
+                "x_column": df.columns[0],
+                "y_column": df.columns[1]})
+            with open(os.path.join(
+                    arc_dir, self._metadata_filename), "w") as fp:
+                json.dump(metadata, fp, indent=4, sort_keys=True)
+
+    def chart_data_columns(self, index):
+        """
+        Return a list of chart data columns.
+        """
+        chart = self.get_chart(index)
+        return chart["columns"]
