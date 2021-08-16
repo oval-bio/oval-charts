@@ -186,16 +186,39 @@ def list(obj):
 @click.option(
     '--filename', '-f', help="chart data filename")
 @click.option(
-    '--key', '-k', multiple=True, help="Set attribute key")
+    '--remove-zero/--no-remove-zero',
+    '-r', help="Don't add rows with zero value in y_column", default=False)
 @click.option(
-    '--value', '-v', multiple=True, help="Set attribute value")
-def add_chart(obj, filename, key, value):
+    '--stroke', '-s', multiple=True,
+    help="brush stroke to use for chart line", default=["steelblue"])
+@click.option(
+    '--stroke-width', '-w', multiple=True,
+    help="brush stroke to use for chart line", default=[1.5])
+@click.argument('x_column')
+@click.argument('y_column', nargs=-1)
+def add_chart(
+        obj, filename, remove_zero, stroke, stroke_width, x_column, y_column):
     """
-    Add chart data to the bundle.
+    Add chart data to the bundle. If multiple y_columns are specified,
+    then multiple charts will be added.
     """
     with oval.core.cli_context(obj) as bundle:
-        chart_kwargs = dict(zip(key, value))
-        bundle.add_chart(filename, **chart_kwargs)
+        for i, y_col in enumerate(y_column):
+            if i < len(stroke):
+                st = stroke[i]
+            else:
+                st = stroke[-1]
+            if i < len(stroke_width):
+                st_w = stroke_width[i]
+            else:
+                st_w = stroke_width[-1]
+            chart_kwargs = {
+                "remove_zero": remove_zero,
+                "x_column": x_column,
+                "y_column": y_col,
+                "stroke": st,
+                "stroke_width": st_w}
+            bundle.add_chart(filename, **chart_kwargs)
 
 
 @root.command()

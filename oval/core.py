@@ -304,6 +304,8 @@ class Bundle(OvalObj):
         Add csv data to the bundle. Keyword args are added
         to chart metadata.
         """
+        logger.debug("Adding chart: {}".format(csv_filename))
+
         # TODO: support types that pandas supports
         df = pd.read_csv(csv_filename)
 
@@ -312,6 +314,13 @@ class Bundle(OvalObj):
 
         x_column = df.columns[0]
         y_column = df.columns[1]
+        if "x_column" in kwargs:
+            x_column = x_column
+        if "y_column" in kwargs:
+            y_column = y_column
+        if "remove_zero" in kwargs and kwargs["remove_zero"]:
+            logger.debug("Removing zero")
+            df = df[df[y_column] != 0]
         x_min = float(df[x_column].min())
         x_max = float(df[x_column].max())
         y_min = float(df[y_column].min())
@@ -328,6 +337,8 @@ class Bundle(OvalObj):
             logger.warning("y_max is NaN for column {}".format(y_column))
 
         arcname = os.path.basename(csv_filename)
+        if "remove_zero" in kwargs and kwargs["remove_zero"]:
+            arcname = "nz_{}".format(arcname)
 
         default_title = os.path.basename(csv_filename)
         chart_metadata = {
@@ -346,7 +357,10 @@ class Bundle(OvalObj):
             "y_min": y_min,
             "y_max": y_max,
             "x_column": x_column,
-            "y_column": y_column}
+            "y_column": y_column,
+            "fill": "none",
+            "stroke": "steelblue",
+            "stroke_width": 1.5}
         chart_metadata.update(kwargs)
 
         metadata = self._get_metadata()
@@ -358,7 +372,8 @@ class Bundle(OvalObj):
         self._set_metadata(metadata)
 
         with edit_archive(self._filename) as arc_dir:
-            shutil.copy2(csv_filename, os.path.join(arc_dir, arcname))
+            df.to_csv(os.path.join(arc_dir, arcname))
+
         return idx
 
     def edit_chart(self, chart_idx, **new_attributes):
