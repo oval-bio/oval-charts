@@ -320,7 +320,7 @@ class Bundle(OvalObj):
             y_column = kwargs["y_column"]
         if "remove_zero" in kwargs and kwargs["remove_zero"]:
             logger.debug("Removing zero")
-            df = df.query('{} == 0'.format(y_column))
+            df = df.query('{} != 0'.format(y_column))
         x_min = float(df[x_column].min())
         x_max = float(df[x_column].max())
         y_min = float(df[y_column].min())
