@@ -109,9 +109,9 @@ foreach($media as $attachment) {
         line.append("path")
           .datum(csv_data)
           .attr("class", "line")  // I add the class line to be able to modify this line later on.
-          .attr("fill", "none")
-          .attr("stroke", "steelblue")
-          .attr("stroke-width", 1.5)
+          .attr("fill", chart.fill)
+          .attr("stroke", chart.stroke)
+          .attr("stroke-width", chart.stroke_width)
           .attr("d", d3.line()
             .x(function(d) { return x(d[chart.x_column]) })
             .y(function(d) { return y(d[chart.y_column]) })
@@ -167,10 +167,6 @@ foreach($media as $attachment) {
           );
           //location.reload();
         });
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     var htmltext = JSZipUtils.getBinaryContent("<?=$attachment->guid;?>", function (err, data) {
