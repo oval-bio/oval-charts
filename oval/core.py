@@ -315,12 +315,12 @@ class Bundle(OvalObj):
         x_column = df.columns[0]
         y_column = df.columns[1]
         if "x_column" in kwargs:
-            x_column = x_column
+            x_column = kwargs["x_column"]
         if "y_column" in kwargs:
-            y_column = y_column
+            y_column = kwargs["y_column"]
         if "remove_zero" in kwargs and kwargs["remove_zero"]:
             logger.debug("Removing zero")
-            df = df[df[y_column] != 0]
+            df = df.query('{} == 0'.format(y_column))
         x_min = float(df[x_column].min())
         x_max = float(df[x_column].max())
         y_min = float(df[y_column].min())
