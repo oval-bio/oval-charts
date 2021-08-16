@@ -194,10 +194,12 @@ class Bundle(OvalObj):
         Adds kwargs to metadata.
         """
         # set up metadata
+        default_title = os.path.basename(self._filename)
         default_metadata = {
             "vendor": "oval.bio",
             "version": oval.__version__,
             "create_time": str(datetime.datetime.now()),
+            "title": default_title,
             "chart_data": []}
         bundle_metadata = default_metadata.copy()
         bundle_metadata.update(kwargs)
