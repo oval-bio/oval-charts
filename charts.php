@@ -191,7 +191,6 @@ foreach($media as $attachment) {
 			  const module = {
 			    chart: chart,
   			    loadChart: function(data) {
-			      showText(elt, this.chart.title);
 			      showChart(this.chart, data);
 			    }};
 
