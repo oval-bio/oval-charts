@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import uuid
 
 import click
 
@@ -366,9 +367,11 @@ def chart_info(obj, idx):
     '--smtp-user', '-u', help="SMTP user")
 @click.option(
     '--smtp-password', '-p', help="SMTP password")
+@click.option(
+    '--title', '-t', help="Post title", default=None)
 def publish(
         obj, from_addr, to_addr, smtp_host, smtp_port,
-        smtp_user, smtp_password):
+        smtp_user, smtp_password, title):
     """
     Publish the bundle by email.
     """
@@ -377,13 +380,13 @@ def publish(
 
         text = ""
         html = None
-        title = None
         if "text" in metadata:
             text = bundle.read_file(metadata["text"]).decode()
         if "html" in metadata:
             html = bundle.read_file(metadata["html"]).decode()
-        if "title" in metadata:
-            title = metadata["title"]
+
+        if title is None:
+            title = str(uuid.uuid4())
 
         kwargs = {
             "smtp_host": smtp_host,
@@ -393,8 +396,8 @@ def publish(
 
         if html is not None:
             kwargs["html_body"] = html
-        if title is None:
-            title = "Session {}".format(os.path.basename(obj.bundle))
+
         files = [(obj.bundle, os.path.basename(obj.bundle), None)]
+        logger.info("Publishing: {}".format(title))
         oval.core.send_email(
             from_addr, to_addr, title, text, files=files, **kwargs)
