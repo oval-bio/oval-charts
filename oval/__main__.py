@@ -133,11 +133,11 @@ def set(obj, key, value):
 
 @root.command()
 @click.pass_obj
-@click.option(
-    '--filename', '-f', help="File containing text to use for the bundle.")
+@click.argument('filename')
 def set_text(obj, filename):
     """
-    Set bundle text that shows up on published reports.
+    Set bundle text that shows up on published reports. Copies the file
+    specified into the bundle and points metadata to it.
     """
     arcname = os.path.basename(filename)
     with oval.core.edit_archive(obj.bundle) as arc_dir:
@@ -380,13 +380,19 @@ def publish(
 
         text = ""
         html = None
+        uuid_str = None
         if "text" in metadata:
             text = bundle.read_file(metadata["text"]).decode()
         if "html" in metadata:
             html = bundle.read_file(metadata["html"]).decode()
+        if "uuid" in metadata:
+            uuid_str = metadata["uuid"]
+        else:
+            logger.warning("missing metadata uuid")
+            uuid_str = str(uuid.uuid1())
 
         if title is None:
-            title = str(uuid.uuid4())
+            title = uuid_str
 
         kwargs = {
             "smtp_host": smtp_host,

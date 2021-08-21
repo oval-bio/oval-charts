@@ -11,6 +11,7 @@ import smtplib
 import ssl
 import sys
 import tempfile
+import uuid
 import zipfile
 from contextlib import contextmanager
 from email import encoders
@@ -200,6 +201,7 @@ class Bundle(OvalObj):
             "version": oval.__version__,
             "create_time": str(datetime.datetime.now()),
             "title": default_title,
+            "uuid": str(uuid.uuid1()),
             "chart_data": []}
         bundle_metadata = default_metadata.copy()
         bundle_metadata.update(kwargs)
