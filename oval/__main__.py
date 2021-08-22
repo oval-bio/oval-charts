@@ -225,13 +225,15 @@ def add_chart(
 @root.command()
 @click.pass_obj
 @click.argument('index')
-@click.argument('key')
-@click.argument('value')
-def edit_chart(obj, index, key, value):
+@click.argument('args', nargs=-1)
+def edit_chart(obj, index, args):
     """
-    Edit chart at index INDEX to include KEY, VALUE.
+    Edit chart at index INDEX to include the specified key/value pairs, where
+    key value pairs are alternating arguments, e.g. KEY VALUE KEY VALUE...
     """
     with oval.core.cli_context(obj) as bundle:
+        key = args[::2]
+        value = args[1::2]
         chart_kwargs = dict(zip(key, value))
         bundle.edit_chart(int(index), **chart_kwargs)
 
@@ -404,6 +406,6 @@ def publish(
             kwargs["html_body"] = html
 
         files = [(obj.bundle, os.path.basename(obj.bundle), None)]
-        logger.info("Publishing: {}".format(title))
+        logger.info("Publishing '{}' to {}".format(title, to_addr))
         oval.core.send_email(
             from_addr, to_addr, title, text, files=files, **kwargs)
