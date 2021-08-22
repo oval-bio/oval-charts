@@ -43,21 +43,49 @@ foreach($media as $attachment) {
                   "translate(" + margin.left + "," + margin.top + ")");
 
         //Read the data
-        var csv_data = d3.csvParse(data);
+        var csv_data = d3.csvParse(data, d3.autoType);
+
+        // select scale function
+        var x_scale = d3.scaleLinear;
+        var y_scale = d3.scaleLinear;
+        var x_min = chart.x_min;
+        var y_min = chart.y_min;
+        var x_max = chart.x_max;
+        var y_max = chart.y_max;
+        if("x_scale" in chart){
+          if(chart.x_scale == "linear"){
+            x_scale = d3.scaleLinear;
+          }
+          else if(chart.x_scale == "time"){
+            x_scale = d3.scaleTime;
+            x_min = Date.parse(chart.x_min);
+            x_max = Date.parse(chart.x_max);
+          }
+        }
+        if("y_scale" in chart){
+          if(chart.y_scale == "linear"){
+            y_scale = d3.scaleLinear;
+          }
+          else if(chart.y_scale == "time"){
+            y_scale = d3.scaleTime;
+            y_min = Date.parse(chart.y_min);
+            y_max = Date.parse(chart.y_max);
+          }
+        }
 
         // Add X axis
-        var x = d3.scaleLinear()
+        var x = x_scale()
           //.domain(d3.extent(csv_data, function(d) { return d[chart.x_column]; }))
-          .domain([chart.x_min, chart.x_max])
+          .domain([x_min, x_max])
           .range([ 0, width ]);
         xAxis = svg.append("g")
           .attr("transform", "translate(0," + height + ")")
           .call(d3.axisBottom(x));
 
         // Add Y axis
-        var y = d3.scaleLinear()
+        var y = y_scale()
           //.domain(d3.extent(csv_data, function(d) { return d[chart.y_column]; }))
-          .domain([chart.y_min, chart.y_max])
+          .domain([y_min, y_max])
           .range([ height, 0 ]);
         yAxis = svg.append("g")
           .call(d3.axisLeft(y));
@@ -185,20 +213,20 @@ foreach($media as $attachment) {
                         showMetadata(elt, metadata);
 
                         // load charts
-			var chart_data = metadata.chart_data;
-			for(var chart_idx = 0; chart_idx < chart_data.length; chart_idx++) {
-			  var chart = chart_data[chart_idx];
-			  const module = {
-			    chart: chart,
-  			    loadChart: function(data) {
-			      showChart(this.chart, data);
-			    }};
+                        var chart_data = metadata.chart_data;
+                        for(var chart_idx = 0; chart_idx < chart_data.length; chart_idx++) {
+                          var chart = chart_data[chart_idx];
+                          const module = {
+                            chart: chart,
+                            loadChart: function(data) {
+                              showChart(this.chart, data);
+                            }};
 
                           const load_chart = module.loadChart;
 
-			  zip.file(chart.filename).async("string").then(
-			    load_chart.bind(module));
-			}
+                          zip.file(chart.filename).async("string").then(
+                            load_chart.bind(module));
+                        }
 
                       });
                 });
