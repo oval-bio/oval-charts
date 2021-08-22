@@ -25,6 +25,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 import oval
 
+import numpy as np
 import pandas as pd
 
 
@@ -323,11 +324,28 @@ class Bundle(OvalObj):
         if "remove_zero" in kwargs and kwargs["remove_zero"]:
             logger.debug("Removing zero")
             df = df.query('{} != 0'.format(y_column))
-        x_min = float(df[x_column].min())
-        x_max = float(df[x_column].max())
-        y_min = float(df[y_column].min())
-        y_max = float(df[y_column].max())
+        x_min = df[x_column].min()
+        if isinstance(x_min, np.int64):
+            x_min = int(x_min)
+        x_max = df[x_column].max()
+        if isinstance(x_max, np.int64):
+            x_max = int(x_max)
+        y_min = df[y_column].min()
+        if isinstance(y_min, np.int64):
+            y_min = int(y_min)
+        y_max = df[y_column].max()
+        if isinstance(y_max, np.int64):
+            y_max = int(y_max)
         columns = list(df.columns)
+        column_types = dict(zip(columns, [str(t) for t in df.dtypes]))
+
+        # valid scale values: linear, time
+        x_scale = "linear"
+        y_scale = "linear"
+        if "x_scale" in kwargs:
+            x_scale = kwargs["x_scale"]
+        if "y_scale" in kwargs:
+            y_scale = kwargs["y_scale"]
 
         if pd.isna(x_min):
             logger.warning("x_min is NaN for column {}".format(x_column))
@@ -343,21 +361,25 @@ class Bundle(OvalObj):
             arcname = "nz_{}".format(arcname)
 
         default_title = os.path.basename(csv_filename)
+        now = datetime.datetime.now()
         chart_metadata = {
             "chart_type": "line",
             "source": "default",
-            "create_time": str(datetime.datetime.now()),
-            "modify_time": str(datetime.datetime.now()),
+            "create_time": str(now),
+            "modify_time": str(now),
             "filename": arcname,
             "mimetype": "text/csv",
             "title": default_title,
             "columns": columns,
+            "column_types": column_types,
             "x_label": x_column,
             "x_min": x_min,
             "x_max": x_max,
+            "x_scale": x_scale,
             "y_label": y_column,
             "y_min": y_min,
             "y_max": y_max,
+            "y_scale": y_scale,
             "x_column": x_column,
             "y_column": y_column,
             "fill": "none",
@@ -481,3 +503,10 @@ class Bundle(OvalObj):
         """
         chart = self.get_chart(index)
         return chart["columns"]
+
+    def chart_data_column_types(self, index):
+        """
+        Return a dict of chart column data types.
+        """
+        chart = self.get_chart(index)
+        return chart["column_types"]
