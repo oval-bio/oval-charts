@@ -190,6 +190,14 @@ class Bundle(OvalObj):
         """
         return self._filename
 
+    @contextmanager
+    def edit_archive(self):
+        """
+        Edit archive context
+        """
+        with edit_archive(self.filename()) as arc_dir:
+            yield arc_dir
+
     def create(self, **kwargs):
         """
         Creates an empty oval.bio session data bundle.
@@ -468,31 +476,52 @@ class Bundle(OvalObj):
         if "feature_range" in kwargs:
             feature_range = kwargs["feature_range"]
 
-        chart = self.get_chart(index)
         with edit_archive(self._filename) as arc_dir:
-            fn = os.path.join(arc_dir, chart["filename"])
+            # get bundle metadata
+            with open(os.path.join(
+                    arc_dir, self._metadata_filename), "r") as fp:
+                metadata = json.load(fp)
+            chart_data_filename = metadata["chart_data"][index]["filename"]
+            x_column = metadata["chart_data"][index]["x_column"]
+            x_min = metadata["chart_data"][index]["x_min"]
+            x_max = metadata["chart_data"][index]["x_max"]
+            y_column = metadata["chart_data"][index]["y_column"]
+            y_min = metadata["chart_data"][index]["y_min"]
+            y_max = metadata["chart_data"][index]["y_max"]
+
+            # rescale the data
+            fn = os.path.join(arc_dir, chart_data_filename)
             df = pd.read_csv(fn)
             min_max_scaler = MinMaxScaler(feature_range=feature_range)
             df[[*columns]] = min_max_scaler.fit_transform(df[[*columns]])
             df.to_csv(fn)
 
+            # update chart metadata for new min/max if data for x or y
+            # columns is altered
+            # TODO: we really need to separate data attributes like column
+            # min/max from chart bounding box
+            if x_column in columns:
+                x_min = df[x_column].min()
+                if isinstance(x_min, np.int64):
+                    x_min = int(x_min)
+                x_max = df[x_column].max()
+                if isinstance(x_max, np.int64):
+                    x_max = int(x_max)
+            if y_column in columns:
+                y_min = df[y_column].min()
+                if isinstance(y_min, np.int64):
+                    y_min = int(y_min)
+                y_max = df[y_column].max()
+                if isinstance(y_max, np.int64):
+                    y_max = int(y_max)
+
             # update chart metadata
-            with open(os.path.join(
-                    arc_dir, self._metadata_filename), "r") as fp:
-                metadata = json.load(fp)
-            x_column = df.columns[0]
-            y_column = df.columns[1]
             metadata["chart_data"][index].update({
                 "modify_time": str(datetime.datetime.now()),
-                "columns": list(df.columns),
-                "x_label": df.columns[0],
-                "x_min": float(df[x_column].min()),
-                "x_max": float(df[x_column].max()),
-                "y_label": df.columns[1],
-                "y_min": float(df[y_column].min()),
-                "y_max": float(df[y_column].max()),
-                "x_column": df.columns[0],
-                "y_column": df.columns[1]})
+                "x_min": x_min,
+                "x_max": x_max,
+                "y_min": y_min,
+                "y_max": y_max})
             with open(os.path.join(
                     arc_dir, self._metadata_filename), "w") as fp:
                 json.dump(metadata, fp, indent=4, sort_keys=True)

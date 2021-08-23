@@ -258,14 +258,35 @@ def copy_chart(obj, index, filename):
     '--range-min', '-i', help="Range minimum", default=0)
 @click.option(
     '--range-max', '-j', help="Range maximum", default=1)
-def rescale_chart_data(obj, index, column, range_min, range_max):
+@click.option(
+    '--relative/--no-relative', '-r',
+    help="Set range min/max such that the value space starts at zero",
+    default=False)
+def rescale_chart_data(
+        obj, index, column, range_min, range_max, relative):
     """
     Rescales the COLUMNs of chart INDEX to be between
-    RANGE_MIN and RANGE_MAX.
+    RANGE_MIN and RANGE_MAX. Using the relative flag
+    forces min to be zero and max to be the column max/min
+    difference.
     """
     with oval.core.cli_context(obj) as bundle:
-        bundle.rescale_chart_data(
-            int(index), *column, feature_range=(range_min, range_max))
+        if relative:
+            metadata = bundle._get_metadata()
+            chart_data_filename = metadata["chart_data"][index]["filename"]
+            fn = os.path.join(arc_dir, chart_data_filename)
+            df = pd.read_csv(fn)
+
+            for col in column:
+                col_min, col_max = df[col].min(), df[col].max()
+                logger.debug(
+                    "relative rescaling: {} {}".format(col_min, col_max))
+                bundle.rescale_chart_data(
+                    int(index), *[col],
+                    feature_range=(type(c_min)(0.0), col_max - col_min))
+        else:
+            bundle.rescale_chart_data(
+                int(index), *column, feature_range=(range_min, range_max))
 
 
 @root.command()
