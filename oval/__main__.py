@@ -14,6 +14,7 @@ import click
 
 import oval.core
 
+import pandas as pd
 from tabulate import tabulate
 
 logger = logging.getLogger(__name__)
@@ -273,9 +274,11 @@ def rescale_chart_data(
     with oval.core.cli_context(obj) as bundle:
         if relative:
             metadata = bundle._get_metadata()
-            chart_data_filename = metadata["chart_data"][index]["filename"]
-            fn = os.path.join(arc_dir, chart_data_filename)
-            df = pd.read_csv(fn)
+            with bundle.edit_archive() as arc_dir:
+                chart_data_filename = metadata[
+                    "chart_data"][int(index)]["filename"]
+                fn = os.path.join(arc_dir, chart_data_filename)
+                df = pd.read_csv(fn)
 
             for col in column:
                 col_min, col_max = df[col].min(), df[col].max()
@@ -283,7 +286,8 @@ def rescale_chart_data(
                     "relative rescaling: {} {}".format(col_min, col_max))
                 bundle.rescale_chart_data(
                     int(index), *[col],
-                    feature_range=(type(c_min)(0.0), col_max - col_min))
+                    feature_range=(
+                        type(col_min)(0.0), col_max - col_min))
         else:
             bundle.rescale_chart_data(
                 int(index), *column, feature_range=(range_min, range_max))

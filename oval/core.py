@@ -184,7 +184,7 @@ class Bundle(OvalObj):
         self._filename = bundle_filename
         self._metadata_filename = "metadata.json"
 
-    def filename():
+    def filename(self):
         """
         Bundle filename.
         """
