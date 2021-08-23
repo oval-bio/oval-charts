@@ -11,7 +11,7 @@ __repo__ = 'https://github.com/transfix/oval-charts'
 __license__ = 'Copyright oval.bio 2021'
 
 
-IS_RELEASE = True
+IS_RELEASE = False
 
 
 logger = logging.getLogger(__name__)
