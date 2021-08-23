@@ -1,5 +1,4 @@
 import csv
-import json
 import logging
 import math
 import os
@@ -15,6 +14,7 @@ import click
 import oval.core
 
 import pandas as pd
+
 from tabulate import tabulate
 
 logger = logging.getLogger(__name__)

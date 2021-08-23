@@ -21,12 +21,14 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import COMMASPACE, formatdate
-from sklearn.preprocessing import MinMaxScaler
+
+import numpy as np
 
 import oval
 
-import numpy as np
 import pandas as pd
+
+from sklearn.preprocessing import MinMaxScaler
 
 
 logger = logging.getLogger(__name__)
